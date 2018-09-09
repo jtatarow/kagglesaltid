@@ -36,13 +36,13 @@ path_test = '../../data/test'
 train_ids = next(os.walk(path_train + "/images"))[2]
 test_ids = next(os.walk(path_test + "/images"))[2]
 
-X_train, X_val, _, _ = train_test_split(train_ids, train_ids, test_size=.2)
-train_images = np.zeros((len(train_ids)*2, IMG_SIZE, IMG_SIZE, IMG_CHANNELS), dtype=np.uint8)
-train_labels = np.zeros((len(train_ids)*2, IMG_SIZE, IMG_SIZE, 1), dtype=np.bool)
+X_train, X_val = train_test_split(train_ids, test_size=.2)
+train_images = np.zeros((len(X_train)*2, IMG_SIZE, IMG_SIZE, IMG_CHANNELS), dtype=np.uint8)
+train_labels = np.zeros((len(X_train)*2, IMG_SIZE, IMG_SIZE, 1), dtype=np.bool)
 
 print('Getting and resizing train images and masks without padding ... ')
 sys.stdout.flush()
-for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):
+for n, id_ in tqdm(enumerate(X_train), total=len(X_train)):
     img = imread(path_train + "/images/" + id_)[:,:,:IMG_CHANNELS]
     train_images[n*2] = img
     train_images[2*n+1] = np.fliplr(img)
@@ -53,10 +53,24 @@ for n, id_ in tqdm(enumerate(train_ids), total=len(train_ids)):
     train_labels[2*n] = mask
     train_labels[2*n+1] = np.fliplr(mask)
 
-test_images = np.zeros((len(test_ids), IMG_SIZE, IMG_SIZE, IMG_CHANNELS), dtype=np.uint8)
-for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
-    img = imread(path_test + "/images/" + id_)[:,:,:IMG_CHANNELS]
-    test_images[n] = img
+val_images = np.zeros((len(X_val), IMG_SIZE, IMG_SIZE, IMG_CHANNELS), dtype=np.uint8)
+val_labels = np.zeros((len(X_val), IMG_SIZE, IMG_SIZE, 1), dtype=np.bool)
+
+print('Getting and resizing train images and masks without padding ... ')
+sys.stdout.flush()
+for n, id_ in tqdm(enumerate(X_val), total=len(X_val)):
+    img = imread(path_train + "/images/" + id_)[:,:,:IMG_CHANNELS]
+    val_images[n] = img
+
+    mask = imread(path_train + "/masks/" + id_)
+    mask = np.expand_dims(mask, axis = -1)
+
+    val_labels[n] = mask
+
+# test_images = np.zeros((len(test_ids), IMG_SIZE, IMG_SIZE, IMG_CHANNELS), dtype=np.uint8)
+# for n, id_ in tqdm(enumerate(test_ids), total=len(test_ids)):
+#     img = imread(path_test + "/images/" + id_)[:,:,:IMG_CHANNELS]
+#     test_images[n] = img
 
 def shuffle():
     global images, labels
@@ -119,10 +133,10 @@ for i in range(50000):
 finalimg = tf.nn.sigmoid(model.output)
 tests = list()
 truthmask = list()
-for i in range(40):
-    batch_X, batch_Y = next_train_batch(50, i, i == 0)
+for i in range(len(X_val) % 50):
+    batch_X = val_images[i*50:(i+1)*50]
     output = sess.run([finalimg], feed_dict={X:batch_X})
-    for pred, gt in zip(output[0], batch_Y):
+    for pred, gt in zip(output[0], val_labels[i*50:(i+1)*50]):
         tests.append(pred.reshape(101, 101))
         truthmask.append((gt*255).reshape(101, 101))
 
