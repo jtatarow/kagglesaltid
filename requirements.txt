@@ -79,7 +79,7 @@ Sphinx==1.7.6
 sphinxcontrib-websupport==1.1.0
 -e git+https://github.com/jtatarow/kagglesaltid.git@a54547cef0d138785c2bdedb3fd6154775fd1961#egg=src
 tensorboard==1.9.0
-tensorflow-gpu==1.9.0
+tensorflow-gpu==1.15.2
 termcolor==1.1.0
 terminado==0.8.1
 testpath==0.3.1
